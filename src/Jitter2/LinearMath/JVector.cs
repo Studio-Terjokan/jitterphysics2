@@ -1,24 +1,7 @@
 /*
- * Copyright (c) Thorben Linneweber and others
- *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * Jitter2 Physics Library
+ * (c) Thorben Linneweber and contributors
+ * SPDX-License-Identifier: MIT
  */
 
 using System;
@@ -31,14 +14,14 @@ namespace Jitter2.LinearMath;
 /// Represents a three-dimensional vector with components of type <see cref="Real"/>.
 /// </summary>
 [StructLayout(LayoutKind.Explicit, Size = 3*sizeof(Real))]
-public partial struct JVector : IEquatable<JVector>
+public partial struct JVector(Real x, Real y, Real z) : IEquatable<JVector>
 {
     internal static JVector InternalZero;
     internal static JVector Arbitrary;
 
-    [FieldOffset(0*sizeof(Real))] public Real X;
-    [FieldOffset(1*sizeof(Real))] public Real Y;
-    [FieldOffset(2*sizeof(Real))] public Real Z;
+    [FieldOffset(0*sizeof(Real))] public Real X = x;
+    [FieldOffset(1*sizeof(Real))] public Real Y = y;
+    [FieldOffset(2*sizeof(Real))] public Real Z = z;
 
     public static readonly JVector Zero;
     public static readonly JVector UnitX;
@@ -61,13 +44,7 @@ public partial struct JVector : IEquatable<JVector>
         InternalZero = Zero;
     }
 
-    public JVector(Real x, Real y, Real z)
-    {
-        X = x;
-        Y = y;
-        Z = z;
-    }
-
+    [Obsolete($"Do not use any longer.")]
     public void Set(Real x, Real y, Real z)
     {
         X = x;
@@ -75,11 +52,8 @@ public partial struct JVector : IEquatable<JVector>
         Z = z;
     }
 
-    public JVector(Real xyz)
+    public JVector(Real xyz) : this(xyz, xyz, xyz)
     {
-        X = xyz;
-        Y = xyz;
-        Z = xyz;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -115,7 +89,7 @@ public partial struct JVector : IEquatable<JVector>
         return $"X={X:F6}, Y={Y:F6}, Z={Z:F6}";
     }
 
-    public override bool Equals(object? obj)
+    public readonly override bool Equals(object? obj)
     {
         return obj is JVector other && Equals(other);
     }
@@ -178,14 +152,6 @@ public partial struct JVector : IEquatable<JVector>
         result.Z = value1.Z > value2.Z ? value1.Z : value2.Z;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void MakeZero()
-    {
-        X = (Real)0.0;
-        Y = (Real)0.0;
-        Z = (Real)0.0;
-    }
-
     /// <summary>
     /// Calculates matrix \times vector, where vector is a column vector.
     /// </summary>
@@ -204,7 +170,7 @@ public partial struct JVector : IEquatable<JVector>
     }
 
     /// <summary>
-    /// Calculates matrix^\mathrf{T} \times vector, where vector is a column vector.
+    /// Calculates transposed(matrix) times vector, where vector is a column vector.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static JVector TransposedTransform(in JVector vector, in JMatrix matrix)
@@ -236,7 +202,7 @@ public partial struct JVector : IEquatable<JVector>
     }
 
     /// <summary>
-    /// Calculates matrix^\mathrf{T} \times vector, where vector is a column vector.
+    /// Calculates transposed(matrix) times vector, where vector is a column vector.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void TransposedTransform(in JVector vector, in JMatrix matrix, out JVector result)
@@ -256,17 +222,17 @@ public partial struct JVector : IEquatable<JVector>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void Transform(in JVector vector, in JQuaternion quaternion, out JVector result)
     {
-        Real numx = (Real)2.0 * (quaternion.Y * vector.Z - quaternion.Z * vector.Y);
-        Real numy = (Real)2.0 * (quaternion.Z * vector.X - quaternion.X * vector.Z);
-        Real numz = (Real)2.0 * (quaternion.X * vector.Y - quaternion.Y * vector.X);
+        Real num0 = (Real)2.0 * (quaternion.Y * vector.Z - quaternion.Z * vector.Y);
+        Real num1 = (Real)2.0 * (quaternion.Z * vector.X - quaternion.X * vector.Z);
+        Real num2 = (Real)2.0 * (quaternion.X * vector.Y - quaternion.Y * vector.X);
 
-        Real num00 = quaternion.Y * numz - quaternion.Z * numy;
-        Real num11 = quaternion.Z * numx - quaternion.X * numz;
-        Real num22 = quaternion.X * numy - quaternion.Y * numx;
+        Real num00 = quaternion.Y * num2 - quaternion.Z * num1;
+        Real num11 = quaternion.Z * num0 - quaternion.X * num2;
+        Real num22 = quaternion.X * num1 - quaternion.Y * num0;
 
-        result.X = vector.X + quaternion.W * numx + num00;
-        result.Y = vector.Y + quaternion.W * numy + num11;
-        result.Z = vector.Z + quaternion.W * numz + num22;
+        result.X = vector.X + quaternion.W * num0 + num00;
+        result.Y = vector.Y + quaternion.W * num1 + num11;
+        result.Z = vector.Z + quaternion.W * num2 + num22;
     }
 
     /// <summary>
@@ -275,17 +241,17 @@ public partial struct JVector : IEquatable<JVector>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void ConjugatedTransform(in JVector vector, in JQuaternion quaternion, out JVector result)
     {
-        Real numx = (Real)2.0 * (quaternion.Z * vector.Y - quaternion.Y * vector.Z);
-        Real numy = (Real)2.0 * (quaternion.X * vector.Z - quaternion.Z * vector.X);
-        Real numz = (Real)2.0 * (quaternion.Y * vector.X - quaternion.X * vector.Y);
+        Real num0 = (Real)2.0 * (quaternion.Z * vector.Y - quaternion.Y * vector.Z);
+        Real num1 = (Real)2.0 * (quaternion.X * vector.Z - quaternion.Z * vector.X);
+        Real num2 = (Real)2.0 * (quaternion.Y * vector.X - quaternion.X * vector.Y);
 
-        Real num00 = quaternion.Z * numy - quaternion.Y * numz;
-        Real num11 = quaternion.X * numz - quaternion.Z * numx;
-        Real num22 = quaternion.Y * numx - quaternion.X * numy;
+        Real num00 = quaternion.Z * num1 - quaternion.Y * num2;
+        Real num11 = quaternion.X * num2 - quaternion.Z * num0;
+        Real num22 = quaternion.Y * num0 - quaternion.X * num1;
 
-        result.X = vector.X + quaternion.W * numx + num00;
-        result.Y = vector.Y + quaternion.W * numy + num11;
-        result.Z = vector.Z + quaternion.W * numz + num22;
+        result.X = vector.X + quaternion.W * num0 + num00;
+        result.Y = vector.Y + quaternion.W * num1 + num11;
+        result.Z = vector.Z + quaternion.W * num2 + num22;
     }
 
     /// <summary>
@@ -367,17 +333,23 @@ public partial struct JVector : IEquatable<JVector>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public readonly override int GetHashCode()
-    {
-        return X.GetHashCode() ^ Y.GetHashCode() ^ Z.GetHashCode();
-    }
+    public readonly override int GetHashCode() => HashCode.Combine(X, Y, Z);
 
+    [Obsolete($"Use static {nameof(NegateInPlace)} instead.")]
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Negate()
     {
         X = -X;
         Y = -Y;
         Z = -Z;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void NegateInPlace(ref JVector vector)
+    {
+        vector.X = -vector.X;
+        vector.Y = -vector.Y;
+        vector.Z = -vector.Z;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -406,6 +378,24 @@ public partial struct JVector : IEquatable<JVector>
         return result;
     }
 
+
+    /// <summary>
+    /// Normalizes <paramref name="value"/>; returns <see cref="JVector.Zero"/> when its squared-length is below <paramref name="epsilonSquared"/>.
+    /// </summary>
+    /// <param name="value">Vector to normalize.</param>
+    /// <param name="epsilonSquared">Cut-off for <c>‖value‖²</c>; default is <c>1 × 10⁻¹⁶</c>.</param>
+    /// <returns>Unit vector or zero.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static JVector NormalizeSafe(in JVector value, Real epsilonSquared = (Real)1e-16)
+    {
+        Real len2 = value.X * value.X + value.Y * value.Y + value.Z * value.Z;
+        if (len2 < epsilonSquared) return JVector.Zero;
+
+        return ((Real)1.0 / MathR.Sqrt(len2)) * value;
+    }
+
+    [Obsolete($"In-place Normalize() is deprecated; " +
+              $"use the static {nameof(JVector.Normalize)} method or {nameof(JVector.NormalizeInPlace)}.")]
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Normalize()
     {
@@ -414,6 +404,15 @@ public partial struct JVector : IEquatable<JVector>
         X *= num;
         Y *= num;
         Z *= num;
+    }
+
+    public static void NormalizeInPlace(ref JVector toNormalize)
+    {
+        Real num2 = toNormalize.LengthSquared();
+        Real num = (Real)1.0 / MathR.Sqrt(num2);
+        toNormalize.X *= num;
+        toNormalize.Y *= num;
+        toNormalize.Z *= num;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -449,14 +448,6 @@ public partial struct JVector : IEquatable<JVector>
     {
         Multiply(value1, scaleFactor, out JVector result);
         return result;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Multiply(Real factor)
-    {
-        X *= factor;
-        Y *= factor;
-        Z *= factor;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -539,7 +530,7 @@ public partial struct JVector : IEquatable<JVector>
         return result;
     }
 
-    public bool Equals(JVector other)
+    public readonly bool Equals(JVector other)
     {
         return X.Equals(other.X) && Y.Equals(other.Y) && Z.Equals(other.Z);
     }

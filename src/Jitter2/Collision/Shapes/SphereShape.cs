@@ -1,24 +1,7 @@
 /*
- * Copyright (c) Thorben Linneweber and others
- *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * Jitter2 Physics Library
+ * (c) Thorben Linneweber and contributors
+ * SPDX-License-Identifier: MIT
  */
 
 using System;
@@ -36,11 +19,15 @@ public class SphereShape : RigidBodyShape
     /// <summary>
     /// Gets or sets the radius of the sphere.
     /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when <paramref name="value"/> is less than or equal to zero.
+    /// </exception>
     public Real Radius
     {
         get => radius;
         set
         {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(radius, nameof(radius));
             radius = value;
             UpdateWorldBoundingBox();
         }
@@ -51,16 +38,20 @@ public class SphereShape : RigidBodyShape
     /// The default radius is 1.0 units.
     /// </summary>
     /// <param name="radius">The radius of the sphere. Defaults to (Real)1.0.</param>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when <paramref name="radius"/> is less than or equal to zero.
+    /// </exception>
     public SphereShape(Real radius = (Real)1.0)
     {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(radius, nameof(radius));
+
         this.radius = radius;
         UpdateWorldBoundingBox();
     }
 
     public override void SupportMap(in JVector direction, out JVector result)
     {
-        result = direction;
-        result.Normalize();
+        result = JVector.Normalize(direction);
         JVector.Multiply(result, radius, out result);
     }
 
@@ -69,14 +60,10 @@ public class SphereShape : RigidBodyShape
         point = JVector.Zero;
     }
 
-    public override void CalculateBoundingBox(in JQuaternion orientation, in JVector position, out JBBox box)
+    public override void CalculateBoundingBox(in JQuaternion orientation, in JVector position, out JBoundingBox box)
     {
-        box.Min.X = -radius;
-        box.Min.Y = -radius;
-        box.Min.Z = -radius;
-        box.Max.X = +radius;
-        box.Max.Y = +radius;
-        box.Max.Z = +radius;
+        box.Min = new JVector(-radius);
+        box.Max = new JVector(+radius);
 
         JVector.Add(box.Min, position, out box.Min);
         JVector.Add(box.Max, position, out box.Max);
