@@ -15,13 +15,13 @@ public partial class Playground : RenderWindow
     private bool debugDrawTree;
     private int debugDrawTreeDepth = 1;
 
-    private readonly Action<JBBox, int> drawBox;
+    private readonly Action<TreeBox, int> drawBox;
 
-    private void DrawBox(JBBox box, int depth)
+    private void DrawBox(TreeBox treeBBox, int depth)
     {
         if (depth != debugDrawTreeDepth) return;
-        DebugRenderer.PushBox(DebugRenderer.Color.Green, Conversion.FromJitter(box.Min),
-            Conversion.FromJitter(box.Max));
+        DebugRenderer.PushBox(DebugRenderer.Color.Green, Conversion.FromJitter(treeBBox.Min),
+            Conversion.FromJitter(treeBBox.Max));
     }
 
     public Vector3 rayHitPoint = Vector3.Zero;
@@ -32,7 +32,7 @@ public partial class Playground : RenderWindow
 
         if (debugDrawTree)
         {
-            World.DynamicTree.EnumerateAABB(drawBox);
+            World.DynamicTree.EnumerateTreeBoxes(drawBox);
         }
 
         if (debugDrawShapes)
@@ -52,18 +52,18 @@ public partial class Playground : RenderWindow
                 Island island = World.Islands[i];
 
                 bool active = false;
-                JBBox box = JBBox.SmallBox;
+                JBoundingBox box = JBoundingBox.SmallBox;
                 foreach (RigidBody body in island.Bodies)
                 {
                     if (body.Shapes.Count == 0)
                     {
                         // mass point
-                        box.AddPoint(body.Position);
+                        JBoundingBox.AddPointInPlace(ref box, body.Position);
                     }
                     else
                     {
                         foreach (var shape in body.Shapes)
-                            JBBox.CreateMerged(box, shape.WorldBoundingBox, out box);
+                            JBoundingBox.CreateMerged(box, shape.WorldBoundingBox, out box);
                     }
 
                     active = body.IsActive;

@@ -63,7 +63,7 @@ public class CcdSolver
                     // Use the predicted position and orientation to calculate the future bounding box of the shape.
                     // Then merge this box with the current bounding box of the shape.
                     shape.CalculateBoundingBox(predOri, predPos, out var predBox);
-                    var box = JBBox.CreateMerged(shape.WorldBoundingBox, predBox);
+                    var box = JBoundingBox.CreateMerged(shape.WorldBoundingBox, predBox);
 
                     // Query all tree proxies (read: shapes) which overlap with this extended bounding box.
                     overlapList.Clear();
@@ -137,12 +137,12 @@ public class CcdSolver
 
         if(shape.ShapeId < otherShape.ShapeId)
         {
-            world.GetArbiter(shape.ShapeId, otherShape.ShapeId, shape.RigidBody, otherShape.RigidBody, out arbiter);
+            world.GetOrCreateArbiter(shape.ShapeId, otherShape.ShapeId, shape.RigidBody, otherShape.RigidBody, out arbiter);
             world.RegisterContact(arbiter, bestpA, bestpB, bestNormal);
         }
         else
         {
-            world.GetArbiter(otherShape.ShapeId, shape.ShapeId, otherShape.RigidBody, shape.RigidBody, out arbiter);
+            world.GetOrCreateArbiter(otherShape.ShapeId, shape.ShapeId, otherShape.RigidBody, shape.RigidBody, out arbiter);
             world.RegisterContact(arbiter, bestpB, bestpA, -bestNormal);
         }
 

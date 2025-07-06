@@ -1,24 +1,7 @@
 /*
- * Copyright (c) Thorben Linneweber and others
- *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
- * LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
- * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * Jitter2 Physics Library
+ * (c) Thorben Linneweber and contributors
+ * SPDX-License-Identifier: MIT
  */
 
 using System;
@@ -31,12 +14,12 @@ namespace Jitter2.LinearMath;
 /// Quaternion Q = Xi + Yj + Zk + W. Uses Hamilton's definition of ij=k.
 /// </summary>
 [StructLayout(LayoutKind.Explicit, Size = 4*sizeof(Real))]
-public partial struct JQuaternion : IEquatable<JQuaternion>
+public partial struct JQuaternion(Real x, Real y, Real z, Real w) : IEquatable<JQuaternion>
 {
-    [FieldOffset(0*sizeof(Real))] public Real X;
-    [FieldOffset(1*sizeof(Real))] public Real Y;
-    [FieldOffset(2*sizeof(Real))] public Real Z;
-    [FieldOffset(3*sizeof(Real))] public Real W;
+    [FieldOffset(0*sizeof(Real))] public Real X = x;
+    [FieldOffset(1*sizeof(Real))] public Real Y = y;
+    [FieldOffset(2*sizeof(Real))] public Real Z = z;
+    [FieldOffset(3*sizeof(Real))] public Real W = w;
 
     /// <summary>
     /// Gets the identity quaternion (0, 0, 0, 1).
@@ -46,29 +29,10 @@ public partial struct JQuaternion : IEquatable<JQuaternion>
     /// <summary>
     /// Initializes a new instance of the <see cref="JQuaternion"/> struct.
     /// </summary>
-    /// <param name="x">The X component.</param>
-    /// <param name="y">The Y component.</param>
-    /// <param name="z">The Z component.</param>
-    /// <param name="w">The W component.</param>
-    public JQuaternion(Real x, Real y, Real z, Real w)
-    {
-        X = x;
-        Y = y;
-        Z = z;
-        W = w;
-    }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="JQuaternion"/> struct.
-    /// </summary>
     /// <param name="w">The W component.</param>
     /// <param name="v">The vector component.</param>
-    public JQuaternion(Real w, in JVector v)
+    public JQuaternion(Real w, in JVector v) : this(v.X, v.Y, v.Z, w)
     {
-        X = v.X;
-        Y = v.Y;
-        Z = v.Z;
-        W = w;
     }
 
     /// <summary>
@@ -261,15 +225,48 @@ public partial struct JQuaternion : IEquatable<JQuaternion>
     }
 
     /// <summary>
-    /// Creates a Quaternion from a unit vector and an angle to rotate about the vector.
+    /// Creates a Quaternion from a <b>unit</b> vector and an angle to rotate about the vector.
     /// </summary>
     /// <param name="axis">The unit vector to rotate around.</param>
     /// <param name="angle">The angle of rotation.</param>
-    public static JQuaternion CreateFromAxisAngle(in JVector axis, JAngle angle)
+    public static JQuaternion CreateFromAxisAngle(in JVector axis, Real angle)
     {
         Real halfAngle = (Real)angle * (Real)0.5;
         (Real s, Real c) = MathR.SinCos(halfAngle);
         return new JQuaternion(axis.X * s, axis.Y * s, axis.Z * s, c);
+    }
+
+    /// <summary>Converts a <b>unit</b> quaternion to axis–angle form.</summary>
+    /// <remarks>
+    /// Assumes <paramref name="quaternion"/> is already normalised.
+    /// The returned <paramref name="angle"/> is clamped to the shortest arc [0 , π].
+    /// </remarks>
+    /// <param name="quaternion">Unit quaternion to decompose.</param>
+    /// <param name="axis">Receives the unit rotation axis.</param>
+    /// <param name="angle">Receives the rotation angle (radians).</param>
+    public static void ToAxisAngle(JQuaternion quaternion, out JVector axis, out Real angle)
+    {
+        Real s = MathR.Sqrt(MathR.Max((Real)0.0, (Real)1.0 - quaternion.W * quaternion.W));
+
+        const Real epsilonSingularity = (Real)1e-6;
+
+        if (s < epsilonSingularity)
+        {
+            angle = (Real)0.0;
+            axis = JVector.UnitX; // Default to X-axis for infinitesimal rotations
+            return;
+        }
+
+        Real invS = (Real)1.0 / s;
+        axis = new JVector(quaternion.X * invS, quaternion.Y * invS, quaternion.Z * invS);
+        angle = (Real)2.0 * MathR.Acos(quaternion.W);
+
+        // Enforce the shortest-arc representation (angle between 0 and PI radians).
+        if (angle > MathR.PI)
+        {
+            angle = (Real)2.0 * MathR.PI - angle;
+            axis  = -axis;
+        }
     }
 
     /// <summary>
@@ -409,9 +406,17 @@ public partial struct JQuaternion : IEquatable<JQuaternion>
         return (Real)Math.Sqrt(X * X + Y * Y + Z * Z + W * W);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public readonly Real LengthSquared()
+    {
+        return X * X + Y * Y + Z * Z + W * W;
+    }
+
     /// <summary>
     /// Normalizes the quaternion to unit length.
     /// </summary>
+    [Obsolete($"In-place Normalize() is deprecated; " +
+              $"use the static {nameof(JQuaternion.Normalize)} method or {nameof(JQuaternion.NormalizeInPlace)}.")]
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Normalize()
     {
@@ -421,6 +426,16 @@ public partial struct JQuaternion : IEquatable<JQuaternion>
         Y *= num;
         Z *= num;
         W *= num;
+    }
+
+    public static void NormalizeInPlace(ref JQuaternion quaternion)
+    {
+        Real num2 = quaternion.LengthSquared();
+        Real num = (Real)1.0 / MathR.Sqrt(num2);
+        quaternion.X *= num;
+        quaternion.Y *= num;
+        quaternion.Z *= num;
+        quaternion.W *= num;
     }
 
     /// <inheritdoc cref="Normalize()"/>
@@ -563,20 +578,17 @@ public partial struct JQuaternion : IEquatable<JQuaternion>
         return result;
     }
 
-    public bool Equals(JQuaternion other)
+    public readonly bool Equals(JQuaternion other)
     {
         return X.Equals(other.X) && Y.Equals(other.Y) && Z.Equals(other.Z) && W.Equals(other.W);
     }
 
-    public override bool Equals(object? obj)
+    public readonly override bool Equals(object? obj)
     {
         return obj is JQuaternion other && Equals(other);
     }
 
-    public override int GetHashCode()
-    {
-        return X.GetHashCode() ^ Y.GetHashCode() ^ Z.GetHashCode() ^ W.GetHashCode();
-    }
+    public readonly override int GetHashCode() => HashCode.Combine(X, Y, Z, W);
 
     public static bool operator ==(JQuaternion left, JQuaternion right)
     {

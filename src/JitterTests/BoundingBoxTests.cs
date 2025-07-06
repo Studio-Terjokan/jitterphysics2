@@ -7,12 +7,12 @@ public class BoundingBoxTests
     private static void CheckBoundingBox(RigidBodyShape shape)
     {
         JQuaternion ori = new JQuaternion(1, 2, 3, 4);
-        ori.Normalize();
+        JQuaternion.NormalizeInPlace(ref ori);
 
         JVector pos = new JVector(12, -11, 17);
 
-        ShapeHelper.CalculateBoundingBox(shape, ori, pos, out JBBox shr);
-        shape.CalculateBoundingBox(ori, pos, out JBBox sbb);
+        ShapeHelper.CalculateBoundingBox(shape, ori, pos, out JBoundingBox shr);
+        shape.CalculateBoundingBox(ori, pos, out JBoundingBox sbb);
 
         Real fraction = shr.GetVolume() / sbb.GetVolume();
 
