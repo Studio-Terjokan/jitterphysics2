@@ -79,4 +79,28 @@ internal class ShardedDictionary<TKey, TValue> where TKey : notnull
     {
         dictionaries[GetShardIndex(key)].Remove(key);
     }
+    
+    public IEnumerable<TValue> Values
+    {
+        get
+        {
+            for (int i = 0; i < dictionaries.Length; i++)
+            {
+                foreach (var v in dictionaries[i].Values)
+                    yield return v;
+            }
+        }
+    }
+
+    public IEnumerable<TKey> Keys
+    {
+        get
+        {
+            for (int i = 0; i < dictionaries.Length; i++)
+            {
+                foreach (var k in dictionaries[i].Keys)
+                    yield return k;
+            }
+        }
+    }
 }
