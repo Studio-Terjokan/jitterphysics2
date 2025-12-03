@@ -21,9 +21,11 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using Jitter2.Dynamics;
 
 namespace Jitter2.DataStructures;
 
@@ -96,4 +98,39 @@ internal class ShardedDictionary<T, K> where T : notnull
     {
         dictionaries[GetShardIndex(key)].Remove(key);
     }
+
+    
+    public IEnumerable<K> Values
+    {
+        get
+        {
+            for (int i = 0; i < dictionaries.Length; i++)
+            {
+                foreach (var v in dictionaries[i].Values)
+                    yield return v;
+            }
+        }
+    }
+
+    public IEnumerable<T> Keys
+    {
+        get
+        {
+            for (int i = 0; i < dictionaries.Length; i++)
+            {
+                foreach (var k in dictionaries[i].Keys)
+                    yield return k;
+            }
+        }
+    }
+    
+    /*public K[] GetAllValues()
+    {
+        List<K> list = new List<K>();
+        for (int i = 0; i < dictionaries.Length; i++)
+        {
+            list.AddRange(dictionaries[i].Values);
+        }
+        return list.ToArray();
+    }*/
 }
