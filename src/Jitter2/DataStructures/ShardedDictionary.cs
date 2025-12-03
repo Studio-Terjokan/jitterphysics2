@@ -83,7 +83,7 @@ internal class ShardedDictionary<TKey, TValue> where TKey : notnull
     }
 
     
-    public IEnumerable<K> Values
+    public IEnumerable<TValue> Values
     {
         get
         {
@@ -95,7 +95,7 @@ internal class ShardedDictionary<TKey, TValue> where TKey : notnull
         }
     }
 
-    public IEnumerable<T> Keys
+    public IEnumerable<TKey> Keys
     {
         get
         {
@@ -106,14 +106,4 @@ internal class ShardedDictionary<TKey, TValue> where TKey : notnull
             }
         }
     }
-    
-    /*public K[] GetAllValues()
-    {
-        List<K> list = new List<K>();
-        for (int i = 0; i < dictionaries.Length; i++)
-        {
-            list.AddRange(dictionaries[i].Values);
-        }
-        return list.ToArray();
-    }*/
 }
